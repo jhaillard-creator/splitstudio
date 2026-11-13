@@ -92,6 +92,8 @@ update_app() {
   SPLITSTUDIO_UPDATED=1 exec "$APP_DIR/Contents/MacOS/SplitStudio"
 }
 update_app
+# After an update, refresh the bundle date so Finder and the Dock pick up a new icon.
+[ -n "${SPLITSTUDIO_UPDATED:-}" ] && touch "$APP_DIR" 2>/dev/null
 
 # 1. uv: a small, fast installer that also provides a private Python, so nothing is needed beforehand.
 if [ ! -x "$UV" ]; then
