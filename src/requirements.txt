@@ -1,0 +1,4 @@
+-r requirements-video.txt
+Flask>=3.1,<4
+requests>=2.32,<3
+pywebview>=5.1,<6; sys_platform == "darwin"

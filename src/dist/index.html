@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f4f4f1"><title>Split Studio — Atelier de clips</title><link rel="stylesheet" href="style.css"><script src="app.js" defer></script></head><body>
+<svg xmlns="http://www.w3.org/2000/svg" class="symbols" aria-hidden="true"><defs>
+<symbol id="mark" viewBox="0 0 32 32"><path fill="currentColor" stroke="none" d="M9 4h19l-5 9H4zm0 15h19l-5 9H4z"/></symbol>
+<symbol id="cut" viewBox="0 0 24 24"><circle cx="5" cy="6" r="3"/><circle cx="5" cy="18" r="3"/><path d="m7.5 7.5 13 13m-13-4 13-13"/></symbol>
+<symbol id="download" viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/></symbol>
+<symbol id="stack" viewBox="0 0 24 24"><path d="m3 8 9-5 9 5-9 5zM3 12l9 5 9-5M3 16l9 5 9-5"/></symbol>
+<symbol id="music" viewBox="0 0 24 24"><path d="M14 3v13a4 4 0 1 1-4-4m4-9c0 4 2 6 6 6"/></symbol>
+<symbol id="link" viewBox="0 0 24 24"><path d="m10 14 4-4m-5 2-2 2a3 3 0 0 0 4 4l3-3m1-3 2-2a3 3 0 0 0-4-4l-3 3"/></symbol>
+<symbol id="play" viewBox="0 0 24 24"><path d="m8 4 12 8-12 8z"/></symbol>
+<symbol id="cc" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M10 10a3 3 0 1 0 0 4m8-4a3 3 0 1 0 0 4"/></symbol>
+<symbol id="split" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 12h14"/></symbol>
+<symbol id="arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
+<symbol id="video" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="3"/><path d="m3 10 17-4m-11 3 2-4m4 3 2-4"/></symbol>
+<symbol id="close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+</defs></svg>
+<aside><a class="brand" href="#atelier"><span class="brandmark"><svg><use href="#mark"/></svg></span>Split<span class="brandthin">Studio</span></a>
+<nav aria-label="Navigation"><div class="eyebrow">Espace de travail</div><a href="#atelier" class="navitem active"><svg><use href="#cut"/></svg>Atelier</a><a href="#clips" class="navitem"><svg><use href="#stack"/></svg>Mes clips <span id="count">0</span></a></nav>
+<button type="button" id="account" class="account"><span class="musicIcon"><svg><use href="#music"/></svg></span><span><strong>Compte TikTok</strong><small id="accountName">Associer un compte</small></span><span>›</span></button></aside>
+<main><div class="topline">Espace de travail <span>/</span> <b>Atelier</b><a class="localLaunch" href="/SplitStudio.zip" download="SplitStudio.zip"><svg aria-hidden="true"><use href="#download"/></svg>Télécharger l’application</a></div>
+<header id="atelier"><div class="eyebrow accent"><i></i> Studio de montage</div><h1>Atelier de clips<span>.</span></h1><p>Transformez une vidéo en clips verticaux prêts à partager.</p></header>
+<div class="grid"><form id="editor" class="card"><div class="cardTitle"><span class="tagIcon"><svg><use href="#cut"/></svg></span><h2>Nouveau montage</h2></div>
+<div class="formcontent"><label for="source">URL de la vidéo</label><div class="inputrow"><svg><use href="#link"/></svg><input type="url" inputmode="url" required id="source" placeholder="https://…"></div>
+<fieldset class="modeField"><legend>Sélection des extraits</legend><div class="modes"><label><input type="radio" name="mode" value="highlights" checked><span>Moments forts IA</span></label><label><input type="radio" name="mode" value="sequential"><span>Vidéo entière</span></label></div><p id="modeHint">L’IA écoute, regarde et choisit automatiquement les passages les plus intéressants.</p></fieldset>
+<fieldset><legend>Durée des clips</legend><div class="durations"><label><input type="radio" name="seconds" value="10" checked><span><b>10</b> s</span></label><label><input type="radio" name="seconds" value="180"><span><b>3</b> min</span></label><label><input type="radio" name="seconds" value="600"><span><b>10</b> min</span></label></div></fieldset>
+<label for="layout">Composition</label><div class="selectrow"><svg><use href="#split"/></svg><select id="layout"><option value="center">Vidéo centrée · bandes noires</option><option value="double">Split screen · deux vidéos</option></select></div>
+<div id="secondWrap" hidden><label for="second">URL de la vidéo du bas</label><div class="inputrow"><svg><use href="#link"/></svg><input type="url" id="second" placeholder="https://…"></div></div>
+<label class="captionrow"><svg><use href="#cc"/></svg><span><b>Sous-titres automatiques</b><small>Incrustés dans chaque clip</small></span><input id="captions" type="checkbox" checked role="switch"><span class="switch" aria-hidden="true"></span></label>
+<button type="submit" class="primary" id="generate"><svg><use href="#cut"/></svg>Générer les clips<svg class="end"><use href="#arrow"/></svg></button><section class="genProgress" id="generation" aria-label="Suivi de génération" hidden><div class="meterHead"><label for="generationBar" id="generationStage">Génération</label><span id="generationPct"></span></div><progress id="generationBar" max="100"></progress></section><p id="status" role="status" hidden></p></div></form>
+<section class="preview card"><div class="previewHead"><h2>Aperçu</h2><span class="ratio">9:16</span></div><div class="stage"><div class="frame" id="frame"><div class="exam"><img src="exemple.jpg" alt="Exemple de cadrage de la vidéo de référence"><div id="secondSample" hidden>Vidéo du bas</div></div><video id="previewVideo" playsinline controls hidden></video></div></div><div class="previewFoot"><span class="led"></span><span id="previewLabel">Exemple de cadrage</span><span id="durationTag">10 s</span></div></section></div>
+<section class="library" id="clips"><div class="libHead"><h2>Mes clips</h2><span id="clipCount">0 clip</span><button type="button" id="openLibrary" class="libOpen">Ouvrir dans le Finder</button></div><div id="selectionBar" class="selectionBar" role="region" aria-label="Clips sélectionnés" hidden></div><div id="clipList" class="cliplist"><div class="empty"><svg><use href="#video"/></svg><p>Les clips générés apparaîtront ici.</p></div></div></section></main>
+<dialog id="modal"><button class="x" type="button" aria-label="Fermer"><svg><use href="#close"/></svg></button><div id="modalContent"></div></dialog>
+</body></html>
