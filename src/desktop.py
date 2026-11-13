@@ -117,7 +117,10 @@ def main():
     bridge.window = window
     try:
         brand_process()
-        webview.start(private_mode=False, storage_path=str(studio.DATA / "webview"))
+        # The marker tells the server this request comes from the app window, not from a browser.
+        agent = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) "
+                 "Version/17.0 Safari/605.1.15 SplitStudioApp")
+        webview.start(private_mode=False, storage_path=str(studio.DATA / "webview"), user_agent=agent)
     finally:
         server.shutdown()
 

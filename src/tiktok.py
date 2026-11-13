@@ -180,6 +180,11 @@ def account():
 
 @bp.get("/connect")
 def connect():
+    if "SplitStudioApp" in request.headers.get("User-Agent", "") and request.args.get("from") != "app":
+        # Google and Apple sign-in refuse embedded app windows: always log in through the real browser.
+        import subprocess
+        subprocess.Popen(["open", request.host_url.rstrip("/") + "/api/tiktok/connect?from=app"])
+        return waiting_page()
     key, secret, uri = settings()
     if not key or not secret:
         raise Problem("Configurez les identifiants TikTok développeur avant la connexion.", 503)
@@ -214,6 +219,19 @@ def callback():
     if from_app:
         return browser_page("Compte TikTok associé ✓", "Tu peux fermer cet onglet et revenir dans Split Studio.")
     return redirect("/?tiktok=connected")
+
+
+def waiting_page():
+    body = ("<!doctype html><meta charset=utf-8><title>Split Studio</title>"
+            "<body style='font:16px -apple-system,sans-serif;display:grid;place-items:center;height:90vh;"
+            "background:#f4f4f1;color:#22281c'><div style='text-align:center;max-width:460px'>"
+            "<h1 style='font-size:24px'>Connexion dans ton navigateur</h1>"
+            "<p>La page TikTok vient de s’ouvrir dans ton navigateur (Chrome). Connecte-toi là-bas, "
+            "avec Google, Apple ou ton e-mail. Cette fenêtre se met à jour toute seule.</p>"
+            "<p><a href='/' style='color:#3f6214'>Revenir au studio</a></p></div>"
+            "<script>setInterval(async()=>{try{const r=await fetch('/api/tiktok/account',{cache:'no-store'});"
+            "const a=await r.json();if(a.connected)location.href='/?tiktok=connected';}catch(e){}},2000);</script>")
+    return current_app.response_class(body, mimetype="text/html")
 
 
 def browser_page(title, message):
