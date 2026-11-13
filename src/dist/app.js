@@ -387,7 +387,8 @@ function setupTikTok(account){
   $('ttCopy').onclick=async()=>{$('ttUri').select();try{await navigator.clipboard.writeText(uri);}catch{document.execCommand?.('copy');}$('ttCopy').textContent='Copié ✓';};
   $('ttForm').onsubmit=async e=>{
     e.preventDefault();$('ttSave').disabled=true;$('ttMsg').textContent='Enregistrement…';
-    try{await api('/api/tiktok/setup',{client_key:$('ttKey').value,client_secret:$('ttSecret').value});location.href='/api/tiktok/connect';}
+    try{await api('/api/tiktok/setup',{client_key:$('ttKey').value,client_secret:$('ttSecret').value});
+      if(window.pywebview?.api?.open_url)connectInBrowser();else location.href='/api/tiktok/connect';}
     catch(err){$('ttMsg').textContent=err.message;$('ttSave').disabled=false;}
   };
 }
@@ -456,6 +457,27 @@ async function openPublish(job,clip) {
   };
 }
 function desktopMode(){document.documentElement.classList.add('desktop');}
+// In the Mac app, web pages open in the default browser (the app window cannot show them).
+document.addEventListener('click',e=>{
+  const a=e.target.closest?.('a[href]');const bridge=window.pywebview?.api;
+  if(!a||!bridge?.open_url)return;
+  const href=a.getAttribute('href');
+  if(href==='/api/tiktok/connect'){e.preventDefault();connectInBrowser();return;}
+  if(/^https?:\/\//.test(href)&&!href.startsWith(location.origin)){e.preventDefault();bridge.open_url(href);}
+},true);
+async function connectInBrowser(){
+  await window.pywebview.api.open_url(location.origin+'/api/tiktok/connect?from=app');
+  const version=show('<h2>Connexion à TikTok</h2><p class="modalcopy">Termine la connexion dans ton navigateur, puis reviens ici : Split Studio détecte automatiquement ton compte.</p><progress></progress><div class="actions"><button class="secondary" id="ttRetry">Rouvrir la page de connexion</button></div>');
+  $('ttRetry').onclick=()=>window.pywebview.api.open_url(location.origin+'/api/tiktok/connect?from=app');
+  while(modal.open&&modalVersion===version){
+    await sleep(2000);
+    try{const acc=await api('/api/tiktok/account');
+      if(acc.connected&&modalVersion===version){applyAccount(acc);
+        show('<h2>TikTok associé ✓</h2><p class="modalcopy" id="ttOk"></p>');
+        $('ttOk').textContent='Compte '+(acc.creator?'@'+acc.creator.creator_username:'TikTok')+' prêt. Clique sur « Publier sur TikTok » à côté d’un clip pour le publier.';return;}
+    }catch{}
+  }
+}
 window.addEventListener('pywebviewready',desktopMode);if(window.pywebview)desktopMode();
 (async()=>{
   try{const h=await api('/api/health');local=h.ok===true;if(h.version){const tag=node('span','v'+h.version,'version');document.querySelector('.brand').after(tag);}}catch{}

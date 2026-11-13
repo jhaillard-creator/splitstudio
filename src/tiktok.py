@@ -186,7 +186,7 @@ def connect():
     if uri != request.host_url.rstrip("/") + "/api/tiktok/callback":
         raise Problem("Ouvrez le studio à l’adresse locale enregistrée pour TikTok.")
     state, verifier = secrets.token_urlsafe(32), secrets.token_urlsafe(64)
-    session["tiktok_flow"] = [state, verifier, time.time()]
+    session["tiktok_flow"] = [state, verifier, time.time(), request.args.get("from") == "app"]
     params = dict(client_key=key, response_type="code", scope="video.publish", state=state,
                   redirect_uri=uri, code_challenge=hashlib.sha256(verifier.encode()).hexdigest(),
                   code_challenge_method="S256")
@@ -196,6 +196,7 @@ def connect():
 @bp.get("/callback")
 def callback():
     flow = session.pop("tiktok_flow", None)
+    from_app = bool(flow and len(flow) > 3 and flow[3])
     try:
         if not flow or time.time() - flow[2] > 600 or not hmac.compare_digest(
             flow[0].encode(), request.args.get("state", "").encode()
@@ -207,8 +208,21 @@ def callback():
             exchange(dict(grant_type="authorization_code", code=request.args["code"],
                           redirect_uri=settings()[2], code_verifier=flow[1]))
     except Problem as exc:
+        if from_app:
+            return browser_page("Association interrompue", str(exc) + " Reviens dans Split Studio pour réessayer.")
         return redirect("/?" + urlencode({"tiktok": "error", "message": str(exc)}))
+    if from_app:
+        return browser_page("Compte TikTok associé ✓", "Tu peux fermer cet onglet et revenir dans Split Studio.")
     return redirect("/?tiktok=connected")
+
+
+def browser_page(title, message):
+    from html import escape
+    body = (f"<!doctype html><meta charset=utf-8><title>Split Studio</title>"
+            f"<body style='font:16px -apple-system,sans-serif;display:grid;place-items:center;height:90vh;"
+            f"background:#f4f4f1;color:#22281c'><div style='text-align:center'><h1 style='font-size:26px'>"
+            f"{escape(title)}</h1><p>{escape(message)}</p></div>")
+    return current_app.response_class(body, mimetype="text/html")
 
 
 @bp.post("/disconnect")

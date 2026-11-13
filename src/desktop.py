@@ -91,6 +91,13 @@ class Bridge:
         with self._lock:
             return dict(self._transfers.get(token) or {"error": "Transfert inconnu."})
 
+    def open_url(self, url):
+        """Open a web page (TikTok login, developer portal…) in the default browser, e.g. Chrome."""
+        if isinstance(url, str) and url.startswith(("https://", "http://127.0.0.1:", "http://localhost:")):
+            subprocess.Popen(["open", url])
+            return True
+        return False
+
     def reveal(self, path):
         if path and Path(path).exists():
             subprocess.Popen(["open", "-R", str(path)])
