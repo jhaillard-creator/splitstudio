@@ -363,7 +363,8 @@ function showAccount(account) {
   if(!account.configured){
     setupTikTok(account);
   } else if(!account.connected) {
-    show('<h2>Associer TikTok</h2><p class="modalcopy">Autorisez Split Studio à publier les clips que vous sélectionnez sur votre compte.</p><a class="primary" href="/api/tiktok/connect">Continuer avec TikTok</a>');
+    show('<h2>Associer TikTok</h2><p class="modalcopy">Autorise Split Studio à publier les clips que tu sélectionnes sur ton compte.</p><p class="modalcopy keyline">Client key utilisée : <code id="ttKeyUsed"></code></p><div class="actions"><a class="primary" href="/api/tiktok/connect">Continuer avec TikTok</a><button class="secondary" id="ttEdit">Modifier les clés</button></div><p class="notice">Si TikTok répond « client_key », utilise les clés de l’onglet <b>Sandbox</b> de ton application et ajoute ton compte TikTok comme utilisateur de test.</p>');
+    $('ttKeyUsed').textContent=account.client_key||'?';$('ttEdit').onclick=()=>setupTikTok(account);
   } else {
     show('<h2>Compte associé</h2><p class="modalcopy" id="accountInfo"></p><div class="actions"><a class="primary" id="reconnect" href="/api/tiktok/connect">Réassocier le compte</a><button class="secondary" id="disconnect">Dissocier le compte</button></div>');
     $('reconnect').hidden=!!account.creator && !account.error;
@@ -378,12 +379,13 @@ function setupTikTok(account){
    <li>Ouvre <a href="https://developers.tiktok.com/apps/" target="_blank" rel="noopener">developers.tiktok.com</a>, connecte-toi et crée une application.</li>
    <li>Ajoute les produits <b>Login Kit</b> (plateforme Desktop) et <b>Content Posting API</b> avec <b>Direct Post</b> et la portée <code>video.publish</code>.</li>
    <li>Dans Login Kit, ajoute cette adresse de redirection :<div class="copyrow"><input id="ttUri" readonly class="textfield"><button type="button" class="secondary" id="ttCopy">Copier</button></div></li>
-   <li>Colle ici la <b>Client key</b> et le <b>Client secret</b> de ton application.</li>
+   <li>Tant que ton application n’est pas validée par TikTok, ouvre l’onglet <b>Sandbox</b> (en haut de la page de l’application), crée une sandbox, ajoute-y les mêmes produits, et dans <b>Target users</b> ajoute ton compte TikTok.</li>
+   <li>Colle ici la <b>Client key</b> et le <b>Client secret</b> affichés dans la Sandbox (pas l’App ID).</li>
   </ol>
   <form id="ttForm"><label class="field" for="ttKey">Client key</label><input id="ttKey" class="textfield" autocomplete="off" spellcheck="false" required>
   <label class="field" for="ttSecret">Client secret</label><input id="ttSecret" class="textfield" type="password" autocomplete="off" required>
   <div class="actions"><button class="primary" id="ttSave">Enregistrer et me connecter à TikTok</button></div><p class="notice" role="status" id="ttMsg"></p></form>`);
-  $('ttUri').value=uri;
+  $('ttUri').value=uri;if(account.client_key)$('ttKey').value=account.client_key;
   $('ttCopy').onclick=async()=>{$('ttUri').select();try{await navigator.clipboard.writeText(uri);}catch{document.execCommand?.('copy');}$('ttCopy').textContent='Copié ✓';};
   $('ttForm').onsubmit=async e=>{
     e.preventDefault();$('ttSave').disabled=true;$('ttMsg').textContent='Enregistrement…';
@@ -480,7 +482,7 @@ async function connectInBrowser(){
 }
 window.addEventListener('pywebviewready',desktopMode);if(window.pywebview)desktopMode();
 (async()=>{
-  try{const h=await api('/api/health');local=h.ok===true;if(h.version){const tag=node('span','v'+h.version,'version');document.querySelector('.brand').after(tag);}}catch{}
+  try{const h=await api('/api/health');local=h.ok===true;if(h.version){const tag=node('span','v'+h.version,'version');document.querySelector('.brand').append(tag);}}catch{}
   if(!local)return;
   try{applyAccount(await api('/api/tiktok/account'));}catch{}
   const params=new URLSearchParams(location.search);

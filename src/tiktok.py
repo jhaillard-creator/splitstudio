@@ -170,7 +170,8 @@ def account():
     configured = all(settings()[:2])
     redirect_uri = settings()[2]
     if not configured or not saved_token():
-        return jsonify(configured=configured, connected=False, redirect_uri=redirect_uri)
+        return jsonify(configured=configured, connected=False, redirect_uri=redirect_uri,
+                       client_key=settings()[0] or "")
     try:
         info = creator(account_token())
         return jsonify(configured=True, connected=True, creator=info)
