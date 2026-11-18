@@ -40,7 +40,7 @@ function demo() {
   const dual=$('layout').value==='double';
   $('frame').classList.toggle('dual',dual);$('secondSample').hidden=!dual;
   $('previewLabel').textContent='Exemple de cadrage';
-  $('durationTag').textContent=({'10':'10 s','180':'3 min','600':'10 min'})[document.querySelector('[name=seconds]:checked').value];
+  $('durationTag').textContent=({'10':'10 s','30':'30 s','60':'60 s','180':'3 min','600':'10 min'})[document.querySelector('[name=seconds]:checked').value];
 }
 $('layout').onchange=()=>{
   const dual=$('layout').value==='double';$('secondWrap').hidden=!dual;$('second').required=dual;demo();
@@ -184,7 +184,7 @@ $('openLibrary').onclick=()=>openFolder('');
 function jobLabel(job) {
   const when=new Date((job.created||0)*1000).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
   const kind=job.highlights?'Moments forts IA':'Vidéo entière';
-  const size=({10:'10 s',180:'3 min',600:'10 min'})[job.seconds]||'';
+  const size=({10:'10 s',30:'30 s',60:'60 s',180:'3 min',600:'10 min'})[job.seconds]||'';
   return [when,kind,size].filter(Boolean).join(' · ');
 }
 // ---- Folders & selection -------------------------------------------------

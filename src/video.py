@@ -25,7 +25,7 @@ from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadError
 
 
-DURATIONS = (10, 180, 600)
+DURATIONS = (10, 30, 60, 180, 600)
 
 
 def duration_seconds(path):
@@ -168,19 +168,27 @@ def _captions(source, progress, duration=None):
     segments, _ = model.transcribe(audio, vad_filter=True, word_timestamps=True, beam_size=1,
                                    condition_on_previous_text=False)
     cues = []
+
+    def flush(group):
+        words = [[w.start, w.end, w.word.strip()] for w in group if w.word.strip()]
+        if words:
+            cues.append([group[0].start, group[-1].end, " ".join(w[2] for w in words), words])
+
     for segment in segments:
         ratio = min(1, segment.end / duration)
         progress(f"Transcription · {round(segment.end)} s sur {math.ceil(duration)} s", 25 + 29 * ratio, "transcribe")
         group = []
         for word in segment.words or []:
-            if group and (word.end - group[0].start > 2.8 or len("".join(w.word for w in [*group, word])) > 36):
-                cues.append((group[0].start, group[-1].end, "".join(w.word for w in group).strip()))
+            # Short, punchy chunks (TikTok style): at most 4 words, ~22 characters or 1.8 s.
+            text = "".join(w.word for w in [*group, word]).strip()
+            if group and (len(group) >= 4 or len(text) > 22 or word.end - group[0].start > 1.8):
+                flush(group)
                 group = []
             group.append(word)
         if group:
-            cues.append((group[0].start, group[-1].end, "".join(w.word for w in group).strip()))
+            flush(group)
         elif not segment.words and segment.text.strip():
-            cues.append((segment.start, segment.end, segment.text.strip()))
+            cues.append([segment.start, segment.end, segment.text.strip()])
     return cues
 
 
@@ -243,6 +251,10 @@ def _ass_text(text):
     return text.replace("\\", "/").replace("{", "(").replace("}", ")")
 
 
+# Spoken word: brand orange (#FF8A1E, written BGR for ASS) and slightly larger.
+HIGHLIGHT = "{\\c&H001E8AFF&\\fscx108\\fscy108}"
+
+
 def _overlay(cues, start, length, path, split, parts):
     """Write an ASS file: "Partie N" in the top black band, captions in the bottom black band.
 
@@ -252,10 +264,10 @@ def _overlay(cues, start, length, path, split, parts):
     if split:
         # No black bands in split screen: label on a dark box at the top, captions on the seam.
         part = "Part,Arial,46,&H00FFFFFF,&H00FFFFFF,&H00000000,&H90000000,-1,0,0,0,100,100,1,0,3,14,0,8,30,30,34,1"
-        caption = "Caption,Arial,52,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,3,0,2,28,28,670,1"
+        caption = "Caption,Arial,60,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,1,0,1,4,0,2,28,28,670,1"
     else:
         part = "Part,Arial,62,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,1,0,1,0,0,8,30,30,68,1"
-        caption = "Caption,Arial,50,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,2,0,8,36,36,968,1"
+        caption = "Caption,Arial,62,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,1,0,1,4,0,8,36,36,968,1"
     lines = ["[Script Info]", "ScriptType: v4.00+", "PlayResX: 720", "PlayResY: 1280", "WrapStyle: 0",
              "ScaledBorderAndShadow: yes", "", "[V4+ Styles]",
              "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, "
@@ -267,11 +279,24 @@ def _overlay(cues, start, length, path, split, parts):
         lines.append(f"Dialogue: 1,{_ass_time(begin)},{_ass_time(end)},Part,,0,0,0,,{_ass_text(label)}")
     # Captions centred in the bottom black band (y=928..1280), whatever their line count.
     place = "" if split else "{\\an5\\pos(360,1104)}"
-    for begin, end, phrase in cues:
+    def add(begin, end, text):
         if end > start and begin < start + length:
             begin, end = max(0, begin - start), min(length, end - start)
-            if round(end * 100) > round(begin * 100) and phrase.strip():
-                lines.append(f"Dialogue: 0,{_ass_time(begin)},{_ass_time(end)},Caption,,0,0,0,,{place}{_ass_text(phrase)}")
+            if round(end * 100) > round(begin * 100):
+                lines.append(f"Dialogue: 0,{_ass_time(begin)},{_ass_time(end)},Caption,,0,0,0,,{place}{text}")
+
+    for cue in cues:
+        begin, end, phrase = cue[0], cue[1], cue[2]
+        words = cue[3] if len(cue) > 3 and cue[3] else None
+        if not words:
+            if phrase.strip():
+                add(begin, end, _ass_text(phrase).upper())
+            continue
+        # Word by word: the whole chunk on screen, the word being spoken highlighted in orange.
+        labels = [_ass_text(w[2]).upper() for w in words]
+        for i in range(len(words)):
+            shown = " ".join(HIGHLIGHT + label + "{\\r}" if j == i else label for j, label in enumerate(labels))
+            add(begin if i == 0 else words[i][0], words[i + 1][0] if i + 1 < len(words) else end, shown)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return f",ass={path.name}"
 
@@ -473,7 +498,7 @@ def render(url, secondary_url, seconds, folder: Path, progress, captions=True, h
                                            12, 22, "Vidéo secondaire")
             fingerprint = f"{url}:{source.stat().st_size}:{source.stat().st_mtime_ns}"
             name = os.environ.get("SPLITSTUDIO_WHISPER_MODEL", "base")
-            transcript_cache = cache / (_cache_key(f"whisper-v2:{name}:{fingerprint}") + ".json")
+            transcript_cache = cache / (_cache_key(f"whisper-v3:{name}:{fingerprint}") + ".json")
             _render_files(source, secondary, seconds, staging, progress, captions, ffmpeg, emit,
                           highlights=highlights, transcript_cache=transcript_cache)
             progress("Clips prêts.", 100, "done")

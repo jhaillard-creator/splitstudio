@@ -76,7 +76,7 @@ def _normalize(values):
 
 def _transcript_signals(cues, bins, progress):
     passages = []
-    for begin, end, text in cues:
+    for begin, end, text, *_ in cues:
         if (passages and begin - passages[-1][1] <= 1.25 and end - passages[-1][0] < 9
                 and not passages[-1][2].endswith((".", "?", "!", "。", "？", "！"))):
             passages[-1][1:] = [end, passages[-1][2] + " " + text]
