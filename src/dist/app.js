@@ -183,7 +183,7 @@ $('openLibrary').onclick=()=>openFolder('');
 
 function jobLabel(job) {
   const when=new Date((job.created||0)*1000).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-  const kind=job.highlights?'Moments forts IA':'Vidéo entière';
+  const kind=job.highlights?'Moments forts IA':'Toute la vidéo';
   const size=({10:'10 s',30:'30 s',60:'60 s',180:'3 min',600:'10 min'})[job.seconds]||'';
   return [when,kind,size].filter(Boolean).join(' · ');
 }
@@ -279,7 +279,8 @@ function renderLibrary() {
     const info=node('div',undefined,'jobInfo');
     const title=node('b');title.append(document.createTextNode('📁 '+folder.name));info.append(title);
     const running=folder.items.some(({job})=>job.status==='running');
-    info.append(node('small',folder.items.length+' clip'+(folder.items.length>1?'s':'')+(running?' · montage en cours…':'')));
+    const sourceTitle=folder.items.map(({job})=>job.title).find(Boolean);
+    info.append(node('small',(sourceTitle?sourceTitle+' · ':'')+folder.items.length+' partie'+(folder.items.length>1?'s':'')+(running?' · montage en cours…':'')));
     head.append(all,toggle,info);
     const ready=folder.items.filter(({job})=>job.status==='done');
     let meter=null;
@@ -353,7 +354,7 @@ $('editor').onsubmit=async e=>{
   }catch(err){showGeneration({status:'error',message:err.message});$('generate').disabled=false;}
 };
 document.querySelectorAll('[name=mode]').forEach(input=>input.addEventListener('change',()=>{
-  $('modeHint').textContent=input.value==='highlights'?'L’IA écoute, regarde et choisit automatiquement les passages les plus intéressants.':'La vidéo est découpée du début à la fin, dans l’ordre.';
+  $('modeHint').textContent=input.value==='highlights'?'L’IA écoute, regarde et choisit automatiquement les passages les plus intéressants.':'La vidéo est découpée du début à la fin en Partie 1, Partie 2, Partie 3…, rangées dans un dossier Vidéo N.';
 }));
 function applyAccount(account){
   $('accountName').textContent=account.connected&&account.creator ? '@'+account.creator.creator_username : 'Associer un compte';

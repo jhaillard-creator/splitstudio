@@ -10,8 +10,8 @@ RESOURCES = APP + "Resources/"
 FILES = ("app.py", "desktop.py", "video.py", "highlights.py", "distribution.py", "tiktok.py", "launcher.sh",
          "requirements.txt", "requirements-video.txt", "DEMARRER.md", "TIKTOK.md", "SplitStudio.icns")
 ASSETS = ("index.html", "app.js", "style.css", "exemple.jpg")
-VERSION = "3.7"
-BUILD = 12
+VERSION = "3.8"
+BUILD = 13
 
 
 def info_plist():

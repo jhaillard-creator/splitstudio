@@ -125,7 +125,6 @@ def produce(folder, record, url, secondary, captions):
     def on_title(title):
         with guard:
             record["title"] = title
-            record["folder"] = clean_folder(title) or default_folder(record)
             save(folder, record)
 
     def on_clip(path, start, end, info):
@@ -163,6 +162,22 @@ def clean_folder(name):
     name = re.sub(r"[\x00-\x1f/:\\]+", " ", str(name or ""))
     name = " ".join(name.split()).strip(" .")
     return name[:80].rstrip(" .")
+
+
+def next_video_folder():
+    """Next free "Vidéo N" folder name, counting the Finder folders and the studio's history."""
+    pattern = re.compile(r"^Vid[eé]o (\d+)$", re.IGNORECASE)
+    used = [0]
+    if EXPORT.is_dir():
+        used += [int(m.group(1)) for p in EXPORT.iterdir() if p.is_dir() and (m := pattern.match(p.name))]
+    for path in DATA.glob("*/job.json"):
+        try:
+            record = json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        names = [record.get("folder", "")] + [c.get("folder", "") for c in record.get("clips", [])]
+        used += [int(m.group(1)) for name in names if (m := pattern.match(name or ""))]
+    return f"Vidéo {max(used) + 1}"
 
 
 def default_folder(record):
@@ -236,6 +251,7 @@ def create_job():
     with lock:
         if busy:
             return jsonify(error="Un montage est déjà en cours."), 409
+        record["folder"] = next_video_folder()
         folder = DATA / key
         folder.mkdir(mode=0o700)
         save(folder, record)
